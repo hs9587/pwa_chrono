@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 20vh; }
+        h1 { font-size: 3em; }
+        p { font-size: 1.5em; color: gray; }
+    </style>
+</head>
+<body>
+    <h1>PWA Clock</h1>
+    <p id="clock"></p>
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleString();
+            document.getElementById("clock").textContent = timeString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>

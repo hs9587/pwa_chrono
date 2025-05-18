@@ -4,24 +4,108 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple PWA</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./service-worker.js')
+            .then(function(registration) {
+                console.log('Service Worker registered with scope:', registration.scope);
+            })
+            .catch(function(error) {
+                console.error('Service Worker registration failed:', error);
+            });
+        }
+    </script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 20vh; }
-        h1 { font-size: 3em; }
-        p { font-size: 1.5em; color: gray; }
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 20vh; color: #333; }
+        .ymw     { font-size: 1.5em; color: #666; font-weight: bold;
+              margin: 0; line-height: 1.5;}
+        .date    { font-size: 8em;                font-weight: bold; 
+              margin: 0; line-height: 0.8;}
+        .time    { font-size: 1.5em; color: #666; font-weight: bold;  
+              margin: 0; line-height: 1.2; }
+        .timezone{ font-size: 1.1em; color: #999; 
+              margin: 0; line-height: 1.0; }
+        .notification-toggle{ font-size: 1.0em;
+              margin: 0; line-height: 2.0; }
     </style>
 </head>
 <body>
-    <h1>PWA Clock</h1>
-    <p id="clock"></p>
+    <div id="ymw"  class="ymw" ></div>
+    <div id="date" class="date"></div>
+    <div id="time" class="time"></div>
+    <div id="utc"  class="timezone"></div>
+    <div id="pst"  class="timezone"></div>
+    <div class="notification-toggle">
+        <button id="notify-toggle">Enable Notifications</button>
+        <div id="notification-status"></div>
+    </div>
     <script>
         function updateClock() {
             const now = new Date();
-            const timeString = now.toLocaleString();
-            document.getElementById("clock").textContent = timeString;
+            const days = ['日', '月', '火', '水', '木', '金', '土'];
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            const weekday = days[now.getDay()];
+            const  ymwString = `${year}/${month}/ (${weekday})`;
+            const dateString = `${day}`;
+            const timeString = now.toLocaleTimeString();
+            document.getElementById("ymw") .textContent =  ymwString;
+            document.getElementById("date").textContent = dateString;
+            document.getElementById("time").textContent = timeString;
+            
+            // UTC 表示（年, 月, 日, 時:分:秒）
+            const utcString = now.toISOString().replace('T',' ').replaceAll('-','/').substring(4,13);
+            document.getElementById("utc").textContent = "UTC" + utcString;
+
+            // 米太平洋時間（PST/PDT 自動切替）
+            const pstDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+            const pstOffset = pstDate.getTimezoneOffset();
+            const isDST = pstOffset !== 480;  // 480分（8時間）は標準時（PST）
+            const pstLabel = isDST ? "PDT" : "PST";
+            const pstString = "/"+pstDate.toLocaleString("en-US", { month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false }).replace(",","");
+            document.getElementById("pst").textContent = `${pstLabel}${pstString}`;
         }
+
+        function updateNotificationStatus() {
+            const statusElement = document.getElementById("notification-status");
+            const permission = Notification.permission;
+            if (permission === 'granted') {
+                statusElement.textContent = "Notifications: Enabled";
+            } else if (permission === 'denied') {
+                statusElement.textContent = "Notifications: Disabled";
+            } else {
+                statusElement.textContent = "Notifications: Not Set";
+            }
+        }
+
+        function enableNotifications() {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    alert('Notifications enabled');
+                    setInterval(sendNotification, 60000);  // 1分ごとにチェック
+                } else {
+                    alert('Notifications denied');
+                }
+            });
+        }
+
+        function sendNotification() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            if (minutes === 0) {
+                const message = `It's now ${hours}:00!`;
+                new Notification(message);
+            }
+        }
+
+        document.getElementById("notify-toggle").addEventListener("click", enableNotifications);
+        updateNotificationStatus();
         setInterval(updateClock, 1000);
         updateClock();
     </script>
 </body>
 </html>
+
